@@ -23,6 +23,7 @@ class Piece {
                 row++
                 this.movementMask.push([])
             }
+            //console.log("mask", this.movementMask)
             this.movementMask[row][column] = false
         }
         let vectors = {
