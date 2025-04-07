@@ -2,19 +2,40 @@ let gameBoard = document.getElementById("gameBoard");
 let ctx = gameBoard.getContext("2d");
 
 const DARKSQUARECOLOUR = "black";
-const LIGHTSQUARECOLOUR = "white";
+const LIGHTSQUARECOLOUR = "#DDDDDD";
 
 // Setup Options.
 let shouldDisplayCoordinates = true;
 let checkboxShowCoordinates = document.getElementById("ShowCoordinates");
 checkboxShowCoordinates.addEventListener("change", (event) => {
     shouldDisplayCoordinates = checkboxShowCoordinates.checked;
-    drawSquares(ctx);
+    drawEverything(ctx);
 });
 
-// document.onload(drawSquares(ctx);)
-drawSquares(ctx);
-drawPiece(ctx, [5,6], "Bishop", "White");
+// Instantiate all the assets (this will also add them to the assetDict);
+new Asset("assets/pieces/BBishop.png", "BlackBishop");
+new Asset("assets/pieces/BKing.png", "BlackKing");
+new Asset("assets/pieces/BKnight.png", "BlackKnight");
+new Asset("assets/pieces/BPawn.png", "BlackPawn");
+new Asset("assets/pieces/BQueen.png", "BlackQueen");
+new Asset("assets/pieces/BRook.png", "BlackRook");
+new Asset("assets/pieces/WBishop.png", "WhiteBishop");
+new Asset("assets/pieces/WKing.png", "WhiteKing");
+new Asset("assets/pieces/WKnight.png", "WhiteKnight");
+new Asset("assets/pieces/WPawn.png", "WhitePawn");
+new Asset("assets/pieces/WQueen.png", "WhiteQueen");
+new Asset("assets/pieces/WRook.png", "WhiteRook");
+
+
+let pieceList = [];
+drawEverything(ctx);
+function drawEverything(ctx) {
+    drawSquares(ctx);
+    for (let i = 0; i < pieceList.length; i++) {
+
+    }
+    drawPiece(ctx, [5,6], "Bishop", "White");
+}
 
 function drawSquares(ctx) {
     for (let i = 0; i < 64; i++) {
@@ -59,7 +80,8 @@ function drawPieces(pieceList) {
 
 function drawPiece(ctx, pos, type, colour) {
     const squareSize = ctx.canvas.width / 8;
-    ctx.fillStyle = "red";
-    ctx.fillRect(pos[0] * squareSize, (7 - pos[1]) * squareSize, 64, 64);
+    // ctx.fillStyle = "red";
+    // ctx.fillRect(pos[0] * squareSize, (7 - pos[1]) * squareSize, 64, 64);
+    ctx.drawImage(assetDict[colour + type].image, pos[0] * squareSize + 0.1 * squareSize, (7 - pos[1]) * squareSize + 0.1 * squareSize, squareSize * 0.8, squareSize * 0.8);
     // ctx.fillRect(0, 0, 64, 64);
 }

@@ -13,8 +13,8 @@ body {
     height: 512px;
     border: 2px solid black;
     border-radius: 5px;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: -webkit-optimize-contrast;
+    /* image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-optimize-contrast; */
 }
 
 .label {
