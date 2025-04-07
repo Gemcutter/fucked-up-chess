@@ -5,14 +5,14 @@ socket.on('pieces', function(pieceList) {
     gameState = buildGameState(pieceList);
 
     // can delete later. Just test data for first white rook.
-    gameState[0].movementMask[0] = [false, false, false, true, true, true, true, false];
-    gameState[0].movementMask[1] = [false, false, true, false, false, false, false, false];
-    gameState[0].movementMask[2] = [false, false, true, false, false, false, false, false];
-    gameState[0].movementMask[3] = [false, false, true, false, false, false, false, false];
-    gameState[0].movementMask[4] = [false, false, true, false, false, false, false, false];
-    gameState[0].movementMask[5] = [false, false, true, false, false, false, false, false];
-    gameState[0].movementMask[6] = [false, false, true, false, false, false, false, false];
-    gameState[0].movementMask[7] = [false, false, true, false, false, false, false, false];
+    gameState[0].movementMask[0] = [false, true, true, true, true, false, false, false];
+    gameState[0].movementMask[1] = [false, false, false, false, false, true, false, false];
+    gameState[0].movementMask[2] = [false, false, false, false, false, true, false, false];
+    gameState[0].movementMask[3] = [false, false, false, false, false, true, false, false];
+    gameState[0].movementMask[4] = [false, false, false, false, false, true, false, false];
+    gameState[0].movementMask[5] = [false, false, false, false, false, true, false, false];
+    gameState[0].movementMask[6] = [false, false, false, false, false, true, false, false];
+    gameState[0].movementMask[7] = [false, false, false, false, false, true, false, false];
     
     function buildGameState(pieces) {
         for (let i = 0; i < pieces.length; i++) {
@@ -26,6 +26,17 @@ socket.on('pieces', function(pieceList) {
         let ctx = gameBoard.getContext("2d");
 
         let continuouslyRender = false;
+
+        let possibleMoves = [ // (row, col)
+            [false, false, false, false, false, false, false, false], 
+            [false, false, false, false, false, false, false, false],
+            [false, false, false, false, false, false, false, false],
+            [false, false, false, true, true, false, false, false],
+            [false, false, false, true, true, false, false, false],
+            [false, false, false, false, false, false, false, false],
+            [false, false, false, false, false, false, false, false],
+            [false, false, false, false, false, false, false, false]
+        ];
     
         const DARKSQUARECOLOUR = "#664039";
         const LIGHTSQUARECOLOUR = "#a7887c";
@@ -75,11 +86,13 @@ socket.on('pieces', function(pieceList) {
                     // console.log("piece clicked: ", gameState[i].colour, gameState[i].type);
 
                     const thisPiece = gameState[i];
-                    gameState[i].held = true;
+                    gameState[i].held = true;                    
+                    possibleMoves = thisPiece.movementMask;
 
                     let piece = gameState[i];
                     gameState.splice(i, 1);
                     gameState.push(piece);
+
 
                     // console.log(gameState);
                     console.log(thisPiece.movementMask);
@@ -99,6 +112,7 @@ socket.on('pieces', function(pieceList) {
         });
         
         document.addEventListener("mouseup", (event) => {
+            continuouslyRender = false;
             const bounds = gameBoard.getBoundingClientRect();
             const mouseX = event.clientX - bounds.x - 2;
             const mouseY = event.clientY - bounds.y - 2;
@@ -106,7 +120,24 @@ socket.on('pieces', function(pieceList) {
             const rowClicked = 7 - Math.floor(((mouseY * SCREENSPACECONVERSION) / ctx.canvas.height) * 8);
             console.log("(col, row)", columnClicked, rowClicked);
 
-            continuouslyRender = false;
+            // ADD A THING HERE THAT:
+            // checks if the dropped position is valid.
+            // if it is, just let the function go on.
+            // but if it isn't, then it should just set the piece's "held" to 
+            //  false and then exit the function early.
+
+            // If there is another piece already occupying this square, delete it.
+            for (let i = 0; i < gameState.length; i++) {
+                if (gameState[i].location[0] === columnClicked &&
+                    gameState[i].location[1] === rowClicked &&
+                    !gameState[i].held) {
+
+                    gameState.splice(i, 1);
+                    break;
+                }
+            }
+
+            // Change this piece's location to be where it was dropped.
             for (let i = 0; i < gameState.length; i++) {
                 if (gameState[i].held) {
                     gameState[i].held = false;
@@ -129,6 +160,21 @@ socket.on('pieces', function(pieceList) {
             //  piece.location => [x,y] 0-7
             //  piece.colour => "Black" / "White"
             //  piece.movementMask => 2D Array, Row -> Column, Boolean : can move there.
+
+            // Draw possible moves
+            for (let i = 0; i < possibleMoves.length; i++) {
+                for (let j = 0; j < possibleMoves[i].length; j++) {
+                    if (possibleMoves[i][j] === true) {
+                        const squareSize = ctx.canvas.width / 8;
+                        const row = i;
+                        const col = j;
+                        ctx.fillStyle = "rgba(255,0,0,0.5)";
+                        ctx.fillRect(row * squareSize, col * squareSize, squareSize, squareSize);
+                    }
+                }
+            }
+
+            // Draw all the pieces. Including the held piece (if existent).
             for (let i = 0; i < gameState.length; i++) {
                 // console.log(gameState[i].location[0], mouseX);
                 if (gameState[i].held) {
