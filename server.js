@@ -26,62 +26,42 @@ class Piece {
             //console.log("mask", this.movementMask)
             this.movementMask[row][column] = false
         }
-        let vectors = {
-            'type':this.type,
-            'colour':this.colour,
-            'location':this.location
-        }
+        let vectors = {}
         if (this.type=="Rook"||this.type=="Queen") {
             //current location of the piece
             let startX = this.location[0]
             let startY = this.location[1]
-            // -row
+            // -col
             let x = startX
             let y = startY
-            vectors["-row"] = []
+            vectors["-col"] = []
             let cont = true
             // while the vector is on the board and has not hit a piece
             while (x>0&&cont) {
                 x--
                 if (pieceMask[x][y]=="") {
-                    vectors["-row"].push([x,y])
+                    vectors["-col"].push([x,y])
                 }
                 else if (pieceMask[x][y]!=this.colour) {
-                    vectors["-row"].push([x,y])
+                    vectors["-col"].push([x,y])
                     cont = false
                 }
                 else {
                     cont = false
                 }
             }
-            // -col
+            // -row
             x = startX
             y = startY
-            vectors["-col"] = []
+            vectors["-row"] = []
+            cont = true
             while (y>0&&cont) {
                 y--
                 if (pieceMask[x][y]=="") {
-                    vectors["-col"].push([x,y])
+                    vectors["-row"].push([x,y])
                 }
                 else if (pieceMask[x][y]!=this.colour) {
-                    vectors["-col"].push([x,y])
-                    cont = false
-                }
-                else {
-                    cont = false
-                }
-            }
-            // +row
-            x = startX
-            y = startY
-            vectors["+row"] = []
-            while (x<7&&cont) {
-                x++
-                if (pieceMask[x][y]=="") {
-                    vectors["+row"].push([x,y])
-                }
-                else if (pieceMask[x][y]!=this.colour) {
-                    vectors["+row"].push([x,y])
+                    vectors["-row"].push([x,y])
                     cont = false
                 }
                 else {
@@ -92,13 +72,32 @@ class Piece {
             x = startX
             y = startY
             vectors["+col"] = []
-            while (y<7&&cont) {
-                y++
+            cont = true
+            while (x<7&&cont) {
+                x++
                 if (pieceMask[x][y]=="") {
                     vectors["+col"].push([x,y])
                 }
                 else if (pieceMask[x][y]!=this.colour) {
                     vectors["+col"].push([x,y])
+                    cont = false
+                }
+                else {
+                    cont = false
+                }
+            }
+            // +row
+            x = startX
+            y = startY
+            vectors["+row"] = []
+            cont = true
+            while (y<7&&cont) {
+                y++
+                if (pieceMask[x][y]=="") {
+                    vectors["+row"].push([x,y])
+                }
+                else if (pieceMask[x][y]!=this.colour) {
+                    vectors["+row"].push([x,y])
                     cont = false
                 }
                 else {
@@ -133,7 +132,8 @@ class Piece {
             // -col
             x = startX
             y = startY
-            vectors["+row -col"] = []
+            vectors["-row +col"] = []
+            cont = true
             while (x<7&&y>0&&cont) {
                 y--
                 x++
@@ -152,6 +152,7 @@ class Piece {
             x = startX
             y = startY
             vectors["+row +col"] = []
+            cont = true
             while (x<7&&y<7&&cont) {
                 x++
                 y++
@@ -169,7 +170,8 @@ class Piece {
             // +col
             x = startX
             y = startY
-            vectors["-row +col"] = []
+            vectors["+row -col"] = []
+            cont = true
             while (x>0&&y<7&&cont) {
                 x--
                 y++
@@ -187,10 +189,11 @@ class Piece {
         }
         for (let vec in vectors) {
             for (let i in vec) {
-                
+                if (vectors[vec][i]!=undefined) {
+                    this.movementMask[vectors[vec][i][0]][vectors[vec][i][1]] = true;
+                }
             }
         }
-        console.log(vectors)
         if (this.type=="Knight") {
 
         }
@@ -199,11 +202,6 @@ class Piece {
         }
         if (this.type=="King") {
             
-        }
-        for (let piece in pieceList) {
-            if (piece.colour == this.colour) {
-                
-            }
         }
         return this.movementMask
     }
@@ -249,10 +247,10 @@ function gameSetup() {
     // clear pieceList
     pieceList = []
     // push all the pieces to the list
-    pieceList.push(new Piece('Rook',[0,2],"white"))
+    pieceList.push(new Piece('Rook',[0,0],"white"))
     pieceList.push(new Piece('Knight',[1,0],"white"))
     pieceList.push(new Piece('Bishop',[2,0],"white"))
-    pieceList.push(new Piece('Queen',[3,0],"white"))
+    pieceList.push(new Piece('Queen',[3,2],"white"))
     pieceList.push(new Piece('King',[4,0],"white"))
     pieceList.push(new Piece('Bishop',[5,0],"white"))
     pieceList.push(new Piece('Knight',[6,0],"white"))
@@ -272,11 +270,11 @@ function gameSetup() {
         pieceList.push(new Piece('Pawn',[i,6],"black"))
     }
     for (let piece in pieceList) {
-        pieceList[piece].defineMask()
+        console.log(pieceList[piece].defineMask())
     }
 }
 gameSetup()
-console.log(getPieceMask())
+getPieceMask()
 http.listen(3000, function() {
    console.log('listening on *:3000')
 })
