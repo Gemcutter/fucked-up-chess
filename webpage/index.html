@@ -2,16 +2,16 @@
 <html>
     <head>
         <link href="style.css" rel="stylesheet">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="crossorigin="anonymous"> </script>
         <script src = "/socket.io/socket.io.js"></script>
+        <script src="assetImport.js"></script>
         <script src = "script.js"></script>
     </head>
     <body>
         <canvas id="gameBoard" width="2048" height="2048"></canvas>
         <div class="m-10 gap-5">
-            <input type="checkbox" name="ShowCoordinates" id="ShowCoordinates" checked>
+            <input type="checkbox" name="ShowCoordinates" id="ShowCoordinates">
             <label for="ShowCoordinates" class="label">Show Co-ordinates</label>
         </div>
     </body>
-    <script src="assetImport.js"></script>
-    <script src="script.js"></script>
 </html>
