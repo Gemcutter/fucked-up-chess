@@ -3,16 +3,6 @@ const SCREENSPACECONVERSION = 4; // Multiply your screenspace co-ords by this to
 let gameState = [];
 socket.on('pieces', function(pieceList) {
     gameState = buildGameState(pieceList);
-
-    // can delete later. Just test data for first white rook.
-    gameState[0].movementMask[0] = [false, true, true, true, true, false, false, false];
-    gameState[0].movementMask[1] = [false, false, false, false, false, true, false, false];
-    gameState[0].movementMask[2] = [false, false, false, false, false, true, false, false];
-    gameState[0].movementMask[3] = [false, false, false, false, false, true, false, false];
-    gameState[0].movementMask[4] = [false, false, false, false, false, true, false, false];
-    gameState[0].movementMask[5] = [false, false, false, false, false, true, false, false];
-    gameState[0].movementMask[6] = [false, false, false, false, false, true, false, false];
-    gameState[0].movementMask[7] = [false, false, false, false, false, true, false, false];
     
     function buildGameState(pieces) {
         for (let i = 0; i < pieces.length; i++) {
@@ -31,8 +21,8 @@ socket.on('pieces', function(pieceList) {
             [false, false, false, false, false, false, false, false], 
             [false, false, false, false, false, false, false, false],
             [false, false, false, false, false, false, false, false],
-            [false, false, false, true, true, false, false, false],
-            [false, false, false, true, true, false, false, false],
+            [false, false, false, false, false, false, false, false],
+            [false, false, false, false, false, false, false, false],
             [false, false, false, false, false, false, false, false],
             [false, false, false, false, false, false, false, false],
             [false, false, false, false, false, false, false, false]
@@ -78,7 +68,7 @@ socket.on('pieces', function(pieceList) {
             const mouseX = event.clientX - bounds.x - 2;
             const mouseY = event.clientY - bounds.y - 2;
             const columnClicked = Math.floor(((mouseX * SCREENSPACECONVERSION) / ctx.canvas.width) * 8);
-            const rowClicked = 7 - Math.floor(((mouseY * SCREENSPACECONVERSION) / ctx.canvas.height) * 8);
+            const rowClicked = 7-Math.floor(((mouseY * SCREENSPACECONVERSION) / ctx.canvas.height) * 8);
             // console.log("(col, row): ", columnClicked, rowClicked);
             for (let i = 0; i < gameState.length; i++) {
                 if (gameState[i].location[0] === columnClicked &&
@@ -167,7 +157,7 @@ socket.on('pieces', function(pieceList) {
                     if (possibleMoves[i][j] === true) {
                         const squareSize = ctx.canvas.width / 8;
                         const row = i;
-                        const col = j;
+                        const col = 7-j;
                         ctx.fillStyle = "rgba(255,0,0,0.5)";
                         ctx.fillRect(row * squareSize, col * squareSize, squareSize, squareSize);
                     }
