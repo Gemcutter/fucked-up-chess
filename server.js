@@ -19,6 +19,7 @@ class Piece {
 class Bishop extends Piece {
     constructor([row,col], colour) {
         super("Bishop",[row,col],colour)
+        this.value = 3
     }
     defineMask() {
         let pieceMask = getPieceMask()
@@ -67,6 +68,7 @@ class Bishop extends Piece {
 class Rook extends Piece {
     constructor([row,col], colour) {
         super("Rook",[row,col],colour)
+        this.value = 5
     }
     defineMask() {
         let pieceMask = getPieceMask()
@@ -116,6 +118,7 @@ class Rook extends Piece {
 class Queen extends Piece {
     constructor([row,col], colour) {
         super("Queen",[row,col],colour)
+        this.value = 9
         
     }
     defineMask() {
@@ -197,6 +200,7 @@ class Queen extends Piece {
 class Knight extends Piece {
     constructor([row,col], colour) {
         super("Knight",[row,col],colour)
+        this.value = 3
     }
     defineMask() {
         let pieceMask = getPieceMask()
@@ -258,6 +262,7 @@ class Knight extends Piece {
 class King extends Piece {
     constructor([row,col], colour) {
         super("King",[row,col],colour)
+        this.value = 0
     }
     defineMask() {
         let pieceMask = getPieceMask()
@@ -304,6 +309,7 @@ class Pawn extends Piece {
         super("Pawn",[row,col],colour)
         this.hasMoved = false
         this.justTwoStepped = false
+        this.value = 1
     }
     defineMask() {
         let pieceMask = getPieceMask()
@@ -346,7 +352,7 @@ class Pawn extends Piece {
                 }
             }
             if (this.location[0]-1>=0&&this.location[1]-1>=0) {
-                if (pieceMask[this.location[0]-1][this.location[1]-1].colour=="white"||pieceMask[this.location[0]-1][this.location[1]].colour=="blac"&&pieceMask[this.location[0]-1][this.location[1]].type=="Pawn"&&pieceMask[this.location[0]-1][this.location[1]].justTwoStepped==true) {
+                if (pieceMask[this.location[0]-1][this.location[1]-1].colour=="white"||pieceMask[this.location[0]-1][this.location[1]].colour=="white"&&pieceMask[this.location[0]-1][this.location[1]].type=="Pawn"&&pieceMask[this.location[0]-1][this.location[1]].justTwoStepped==true) {
                     this.movementMask[this.location[0]-1][this.location[1]-1]=true
                 }
             }
@@ -359,11 +365,57 @@ class Pawn extends Piece {
 class Connection {
     constructor(socket) {
         this.socket = socket
+        if (getDictLen(connectionDict)==0) {
+            this.colour = 'white'
+        }
+        else if (getDictLen(connectionDict)==1) {
+            this.colour = oppositeColour(getOtherPlayerColour(socket.id))
+        }
+        else {
+            let whiteExists = false
+            let blackExists = false
+            for (let i in connectionDict) {
+                if (connectionDict[i].colour=='white') {
+                    whiteExists=true
+                }
+                else if (connectionDict[i].colour=='black') {
+                    blackExists=true
+                }
+            }
+            if (!blackExists) {
+                this.colour = 'black'
+            }
+            else if (!whiteExists) {
+                this.colour = 'white'
+            }
+            else {
+                this.colour = 'none'
+            }
+        }
     }
 }
 // make datatypes for each class
 let pieceList = []
 let connectionDict = {}
+let turn = "white"
+let points = {
+    'black':0,
+    'white':0
+}
+function getOtherPlayerColour(myId) {
+    for (let i in connectionDict) {
+        if (i!=myId&&connectionDict[i].colour!='none') {
+            return connectionDict[i].colour
+        }
+    }
+}
+function getDictLen(dict) {
+    let len = 0
+    for (let i in dict) {
+        len++
+    }
+    return len
+}
 
 function getPieceMask() {
     let pieceMask = []
@@ -381,16 +433,93 @@ function getPieceMask() {
 
 io.on('connection', function(socket) {
     console.log('User '+socket.id+' connected')
-    socket.emit("pieces",pieceList)
     // add connection to the list
     connectionDict[socket.id] = new Connection(socket)
 
+    socket.emit("pieces",pieceList, connectionDict[socket.id].colour)
+    socket.on('sendMove', function(piece, location) {
+        let pieceMask = getPieceMask()
+        if (location[0]>7||location[1]>7||location[0]<0||location[1]<0) {
+            socket.emit('pieces', pieceList, connectionDict[socket.id].colour)
+            return
+        }
+        if (connectionDict[socket.id].colour==turn&&piece.colour==turn&&pieceMask[piece.location[0]][piece.location[1]].type == piece.type) {
+            if (pieceMask[piece.location[0]][piece.location[1]].movementMask[location[0]][[location[1]]]) {
+                for (let i in pieceList) {
+                    if (pieceList[i].type=="Pawn") {
+                        pieceList[i].justTwoStepped=false
+                    }
+                }
+                for (let i in pieceList) {
+                    if (pieceList[i].location[0] == location[0]&&pieceList[i].location[1] == location[1]) {
+                        points[piece.colour]+=pieceList[i].value
+                        if (pieceList[i].type="King") {
+                            socket.emit("gameOver",oppositeColour(pieceList[i].colour))
+                        }
+                        pieceList.splice(i,1)
+                    }
+                    if (pieceList[i].location[0] == piece.location[0]&&pieceList[i].location[1] == piece.location[1]) {
+                        if (piece.type=="Pawn") {
+                            pieceList[i].hasMoved=true
+                            if (piece.location[1]==location[1]+2||piece.location[1]==location[1]-2) {
+                                pieceList[i].justTwoStepped=true
+                            }
+                        }
+                        pieceList[i].location = location
+                        console.log("moved "+piece.type+" to "+location)
+                    }
+                    if (piece.type=="Pawn"&&piece.location[0]!=location[0]&&pieceMask[location[0]][location[1]]=="") {
+                        if (pieceList[i].location[0]==location[0]&&pieceList[i].location[1]==piece.location[1]) {
+                            points[piece.colour]+=pieceList[i].value
+                            if (pieceList[i].type="King") {
+                                socket.emit("gameOver",oppositeColour(pieceList[i].colour))
+                            }
+                            pieceList.splice(i,1)
+                            for (let j in pieceList) {
+                                if (pieceList[j].location[0]==piece.location[0]&&pieceList[j].location[1]==piece.location[1]) {
+                                    pieceList[j].location = location
+                                }
+                            }
+                        }
+                    }
+                }
+                for (let i in pieceList) {
+                    pieceList[i].defineMask()
+                }
+                if (turn == "white") {
+                    turn = 'black'
+                }
+                else {
+                    turn = 'white'
+                }
+                for (let player in connectionDict) {
+                    connectionDict[player].socket.emit('pieces', pieceList, connectionDict[player].colour)
+                }
+                console.log(piece.colour+" "+piece.type+"["+piece.location+"] to "+location)
+            }
+            else {
+                socket.emit('pieces', pieceList, connectionDict[socket.id].colour)
+            }
+        }
+        else {
+            socket.emit('pieces', pieceList, connectionDict[socket.id].colour)
+        }
+    })
     //Whenever someone disconnects this piece of code executed
-    socket.on('disconnect', function () {
+    socket.on('disconnect', function() {
         console.log('User '+socket.id+' disconnected')
         delete connectionDict[socket.id]
     });
 });
+
+function oppositeColour(colour) {
+    if (colour=="black") {
+        return "white"
+    }
+    else {
+        return "black"
+    }
+}
 
 function gameSetup() {
     // clear pieceList
@@ -407,11 +536,6 @@ function gameSetup() {
     for (let i=0;i<8;i++) {
         pieceList.push(new Pawn([i,1],"white"))
     }
-    let a = new Pawn([5,3],"white")
-    a.justTwoStepped=true
-    a.hasMoved=true
-    pieceList.push(a)
-    pieceList.push(new Pawn([4,3],"black"))
     pieceList.push(new Rook([0,7],"black"))
     pieceList.push(new Knight([1,7],"black"))
     pieceList.push(new Bishop([2,7],"black"))
@@ -423,12 +547,11 @@ function gameSetup() {
     for (let i=0;i<8;i++) {
         pieceList.push(new Pawn([i,6],"black"))
     }
-    for (piece in pieceList) {
+    for (let piece in pieceList) {
         pieceList[piece].defineMask()
     }
 }
 gameSetup()
-getPieceMask()
 http.listen(3000, function() {
    console.log('listening on *:3000')
 })
