@@ -13,7 +13,6 @@ class Piece {
         this.colour = colour
         this.movementMask = []
     }
-    defineMask() {}
 }
 
 class Bishop extends Piece {
@@ -34,16 +33,31 @@ class Bishop extends Piece {
             let row = this.location[0]
             let col = this.location[1]
             let firstLoop = true
+            let postKing = false
             while(row>=0&&col>=0&&row<=7&&col<=7) {
                 if (!firstLoop) {
                     if (pieceMask[row][col].colour==this.colour) {
+                        coverMasks[this.colour][row][col] = true
                         break
                     }
                     else if (pieceMask[row][col]=="") {
+                        coverMasks[this.colour][row][col] = true
+                        if (!postKing) {
+                            this.movementMask[row][col] = true
+                        }
+                    }
+                    else if (pieceMask[row][col].type=="King") {
+                        postKing=true
+                        coverMasks[this.colour][row][col] = true
                         this.movementMask[row][col] = true
                     }
-                    else {
+                    else if (!postKing) {
+                        coverMasks[this.colour][row][col] = true
                         this.movementMask[row][col] = true
+                        break
+                    }
+                    else {
+                        coverMasks[this.colour][row][col] = true
                         break
                     }
                 }
@@ -83,16 +97,31 @@ class Rook extends Piece {
             let row = this.location[0]
             let col = this.location[1]
             let firstLoop = true
+            let postKing = false
             while(row>=0&&col>=0&&row<=7&&col<=7) {
                 if (!firstLoop) {
                     if (pieceMask[row][col].colour==this.colour) {
+                        coverMasks[this.colour][row][col] = true
                         break
                     }
                     else if (pieceMask[row][col]=="") {
+                        coverMasks[this.colour][row][col] = true
+                        if (!postKing) {
+                            this.movementMask[row][col] = true
+                        }
+                    }
+                    else if (pieceMask[row][col].type=="King") {
+                        postKing=true
+                        coverMasks[this.colour][row][col] = true
                         this.movementMask[row][col] = true
                     }
-                    else {
+                    else if (!postKing) {
+                        coverMasks[this.colour][row][col] = true
                         this.movementMask[row][col] = true
+                        break
+                    }
+                    else {
+                        coverMasks[this.colour][row][col] = true
                         break
                     }
                 }
@@ -134,16 +163,31 @@ class Queen extends Piece {
             let row = this.location[0]
             let col = this.location[1]
             let firstLoop = true
+            let postKing = false
             while(row>=0&&col>=0&&row<=7&&col<=7) {
                 if (!firstLoop) {
                     if (pieceMask[row][col].colour==this.colour) {
+                        coverMasks[this.colour][row][col] = true
                         break
                     }
                     else if (pieceMask[row][col]=="") {
+                        coverMasks[this.colour][row][col] = true
+                        if (!postKing) {
+                            this.movementMask[row][col] = true
+                        }
+                    }
+                    else if (pieceMask[row][col].type=="King") {
+                        postKing=true
+                        coverMasks[this.colour][row][col] = true
                         this.movementMask[row][col] = true
                     }
-                    else {
+                    else if (!postKing) {
+                        coverMasks[this.colour][row][col] = true
                         this.movementMask[row][col] = true
+                        break
+                    }
+                    else {
+                        coverMasks[this.colour][row][col] = true
                         break
                     }
                 }
@@ -166,16 +210,31 @@ class Queen extends Piece {
             let row = this.location[0]
             let col = this.location[1]
             let firstLoop = true
+            let postKing = false
             while(row>=0&&col>=0&&row<=7&&col<=7) {
                 if (!firstLoop) {
                     if (pieceMask[row][col].colour==this.colour) {
+                        coverMasks[this.colour][row][col] = true
                         break
                     }
                     else if (pieceMask[row][col]=="") {
+                        coverMasks[this.colour][row][col] = true
+                        if (!postKing) {
+                            this.movementMask[row][col] = true
+                        }
+                    }
+                    else if (pieceMask[row][col].type=="King") {
+                        postKing=true
+                        coverMasks[this.colour][row][col] = true
                         this.movementMask[row][col] = true
                     }
-                    else {
+                    else if (!postKing) {
+                        coverMasks[this.colour][row][col] = true
                         this.movementMask[row][col] = true
+                        break
+                    }
+                    else {
+                        coverMasks[this.colour][row][col] = true
                         break
                     }
                 }
@@ -249,9 +308,11 @@ class Knight extends Piece {
                     continue
                 }
                 if (pieceMask[row][col].colour==this.colour) {
+                    coverMasks[this.colour][row][col] = true
                     continue
                 }
                 else {
+                    coverMasks[this.colour][row][col] = true
                     this.movementMask[row][col] = true
                 }
             }
@@ -294,6 +355,7 @@ class King extends Piece {
             if (row==this.location[0]&&col==this.location[1]) {
                 continue
             }
+            coverMasks[this.colour][row][col] = true
             if (pieceMask[row][col].colour==this.colour) {
                 continue
             }
@@ -301,6 +363,9 @@ class King extends Piece {
         }
         
         return this.movementMask
+    }
+    updateMask() {
+
     }
 }
 
@@ -327,13 +392,14 @@ class Pawn extends Piece {
                     this.movementMask[this.location[0]][this.location[1]+2]=true
                 }
             }
-            
-            if (this.location[0]+1<=7&&this.location[1]-1<=7) {
+            if (this.location[0]+1<=7&&this.location[1]+1<=7) {
+                coverMasks[this.colour][this.location[0]+1][this.location[1]+1] = true
                 if (pieceMask[this.location[0]+1][this.location[1]+1].colour=="black"||pieceMask[this.location[0]+1][this.location[1]].colour=="black"&&pieceMask[this.location[0]+1][this.location[1]].type=="Pawn"&&pieceMask[this.location[0]+1][this.location[1]].justTwoStepped==true) {
                     this.movementMask[this.location[0]+1][this.location[1]+1]=true
                 }
             }
-            if (this.location[0]-1>=0&&this.location[1]-1<=7) {
+            if (this.location[0]-1>=0&&this.location[1]+1<=7) {
+                coverMasks[this.colour][this.location[0]-1][this.location[1]+1] = true
                 if (pieceMask[this.location[0]-1][this.location[1]+1].colour=="black"||pieceMask[this.location[0]-1][this.location[1]].colour=="black"&&pieceMask[this.location[0]-1][this.location[1]].type=="Pawn"&&pieceMask[this.location[0]-1][this.location[1]].justTwoStepped==true) {
                     this.movementMask[this.location[0]-1][this.location[1]+1]=true
                 }
@@ -347,11 +413,13 @@ class Pawn extends Piece {
                 }
             }
             if (this.location[0]+1<=7&&this.location[1]-1>=0) {
+                coverMasks[this.colour][this.location[0]+1][this.location[1]-1] = true
                 if (pieceMask[this.location[0]+1][this.location[1]-1].colour=="white"||pieceMask[this.location[0]+1][this.location[1]].colour=="white"&&pieceMask[this.location[0]+1][this.location[1]].type=="Pawn"&&pieceMask[this.location[0]+1][this.location[1]].justTwoStepped==true) {
                     this.movementMask[this.location[0]+1][this.location[1]-1]=true
                 }
             }
             if (this.location[0]-1>=0&&this.location[1]-1>=0) {
+                coverMasks[this.colour][this.location[0]-1][this.location[1]-1] = true
                 if (pieceMask[this.location[0]-1][this.location[1]-1].colour=="white"||pieceMask[this.location[0]-1][this.location[1]].colour=="white"&&pieceMask[this.location[0]-1][this.location[1]].type=="Pawn"&&pieceMask[this.location[0]-1][this.location[1]].justTwoStepped==true) {
                     this.movementMask[this.location[0]-1][this.location[1]-1]=true
                 }
@@ -402,6 +470,11 @@ let points = {
     'black':0,
     'white':0
 }
+let coverMasks = {
+    'black':[],
+    'white':[]
+}
+
 function getOtherPlayerColour(myId) {
     for (let i in connectionDict) {
         if (i!=myId&&connectionDict[i].colour!='none') {
@@ -483,6 +556,7 @@ io.on('connection', function(socket) {
                         }
                     }
                 }
+                clearCoverMasks()
                 for (let i in pieceList) {
                     pieceList[i].defineMask()
                 }
@@ -521,35 +595,51 @@ function oppositeColour(colour) {
     }
 }
 
+function clearCoverMasks() {
+    for (let colour in coverMasks) {
+        coverMasks[colour]=[]
+        for (let i=0;i<8;i++) {
+            coverMasks[colour].push([])
+            for (let j=0;j<8;j++) {
+                coverMasks[colour][i].push(false)
+            }
+        }
+    }
+}
+
 function gameSetup() {
     // clear pieceList
     pieceList = []
     // push all the pieces to the list
-    pieceList.push(new Rook([0,0],"white"))
-    pieceList.push(new Knight([1,0],"white"))
-    pieceList.push(new Bishop([2,0],"white"))
-    pieceList.push(new Queen([3,0],"white"))
-    pieceList.push(new King([4,0],"white"))
-    pieceList.push(new Bishop([5,0],"white"))
-    pieceList.push(new Knight([6,0],"white"))
+    // pieceList.push(new Rook([0,0],"white"))
+    // pieceList.push(new Knight([1,0],"white"))
+    // pieceList.push(new Bishop([2,0],"white"))
+    // pieceList.push(new Queen([3,0],"white"))
+    // pieceList.push(new King([4,0],"white"))
+    // pieceList.push(new Bishop([5,0],"white"))
+    // pieceList.push(new Knight([6,0],"white"))
+    // pieceList.push(new Rook([7,0],"white"))
+    // for (let i=0;i<8;i++) {
+    //     pieceList.push(new Pawn([i,1],"white"))
+    // }
+    // pieceList.push(new Rook([0,7],"black"))
+    // pieceList.push(new Knight([1,7],"black"))
+    // pieceList.push(new Bishop([2,7],"black"))
+    // pieceList.push(new Queen([3,7],"black"))
+    // pieceList.push(new King([4,7],"black"))
+    // pieceList.push(new Bishop([5,7],"black"))
+    // pieceList.push(new Knight([6,7],"black"))
+    // pieceList.push(new Rook([7,7],"black"))
+    // for (let i=0;i<8;i++) {
+    //     pieceList.push(new Pawn([i,6],"black"))
+    // }
     pieceList.push(new Rook([7,0],"white"))
-    for (let i=0;i<8;i++) {
-        pieceList.push(new Pawn([i,1],"white"))
-    }
-    pieceList.push(new Rook([0,7],"black"))
-    pieceList.push(new Knight([1,7],"black"))
-    pieceList.push(new Bishop([2,7],"black"))
-    pieceList.push(new Queen([3,7],"black"))
-    pieceList.push(new King([4,7],"black"))
-    pieceList.push(new Bishop([5,7],"black"))
-    pieceList.push(new Knight([6,7],"black"))
-    pieceList.push(new Rook([7,7],"black"))
-    for (let i=0;i<8;i++) {
-        pieceList.push(new Pawn([i,6],"black"))
-    }
+    pieceList.push(new King([7,4],"black"))
+    clearCoverMasks()
     for (let piece in pieceList) {
         pieceList[piece].defineMask()
     }
+    console.log(coverMasks)
 }
 gameSetup()
 http.listen(3000, function() {
