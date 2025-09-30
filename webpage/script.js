@@ -1,12 +1,13 @@
 const socket = io();
 const SCREENSPACECONVERSION = 4; // Multiply your screenspace co-ords by this to get the Canvas Co-ords.
 let gameState = [];
+let moveSquares = [];
 let playerColour
 $(document).ready(function() {
-    socket.on('pieces', function(pieceList, colour) {
+    socket.on('pieces', function(pieceList, colour, movedSquares) {
         playerColour = colour
+        moveSquares = movedSquares
         gameState = buildGameState(pieceList);
-        
         function buildGameState(pieces) {
             for (let i = 0; i < pieces.length; i++) {
                 pieces[i].held = false;
@@ -14,7 +15,6 @@ $(document).ready(function() {
             return pieces;
         }
         drawEverything();
-        
     })
     socket.on('gameOver', function(colour) {
         if (colour != "none") {
@@ -79,7 +79,13 @@ $(document).ready(function() {
         const bounds = gameBoard.getBoundingClientRect();
         const mouseX = event.clientX - bounds.x - 2;
         const mouseY = event.clientY - bounds.y - 2;
-        const columnClicked = Math.floor(((mouseX * SCREENSPACECONVERSION) / ctx.canvas.width) * 8);
+        let columnClicked
+        if (playerColour=='white') {
+            columnClicked = Math.floor(((mouseX * SCREENSPACECONVERSION) / ctx.canvas.width) * 8);
+        }
+        else {
+            columnClicked = 7-Math.floor(((mouseX * SCREENSPACECONVERSION) / ctx.canvas.width) * 8);
+        }
         let rowClicked
         if (playerColour=='white') {
             rowClicked = 7-Math.floor(((mouseY * SCREENSPACECONVERSION) / ctx.canvas.height) * 8);
@@ -92,7 +98,7 @@ $(document).ready(function() {
         for (let i = 0; i < gameState.length; i++) {
             if (gameState[i].location[0] === columnClicked &&
                 gameState[i].location[1] === rowClicked) {
-                //console.log("piece clicked: ", gameState[i].colour, gameState[i].type);
+                console.log("piece clicked: ", gameState[i].colour, gameState[i].type);
 
                 const thisPiece = gameState[i];
                 gameState[i].held = true;                    
@@ -125,13 +131,19 @@ $(document).ready(function() {
         const bounds = gameBoard.getBoundingClientRect();
         const mouseX = event.clientX - bounds.x - 2;
         const mouseY = event.clientY - bounds.y - 2;
-        const columnClicked = Math.floor(((mouseX * SCREENSPACECONVERSION) / ctx.canvas.width) * 8);
+        let columnClicked
         let rowClicked
         if (playerColour=='white') {
             rowClicked= 7 - Math.floor(((mouseY * SCREENSPACECONVERSION) / ctx.canvas.height) * 8);
         } 
         else {
             rowClicked = Math.floor(((mouseY * SCREENSPACECONVERSION) / ctx.canvas.height) * 8);
+        }
+        if (playerColour=='white') {
+            columnClicked = Math.floor(((mouseX * SCREENSPACECONVERSION) / ctx.canvas.width) * 8);
+        } 
+        else {
+            columnClicked = 7- Math.floor(((mouseX * SCREENSPACECONVERSION) / ctx.canvas.width) * 8);
         }
         console.log("(col, row)", columnClicked, rowClicked);
 
@@ -189,19 +201,34 @@ $(document).ready(function() {
         //  piece.location => [x,y] 0-7
         //  piece.colour => "Black" / "White"
         //  piece.movementMask => 2D Array, Row -> Column, Boolean : can move there.
+        
+        // Draw last move 
+        for (let i in moveSquares) {
+            const squareSize = ctx.canvas.width / 8;
+            if (playerColour == "white") {
+                ctx.fillStyle = "rgba(0,255,0,0.5)";
+                ctx.fillRect((moveSquares[i][0]) * squareSize, (7-moveSquares[i][1]) * squareSize, squareSize, squareSize);
+            }
+            else {
+                ctx.fillStyle = "rgba(0,255,0,0.5)";
+                ctx.fillRect((7-moveSquares[i][0]) * squareSize, moveSquares[i][1] * squareSize, squareSize, squareSize);
+            }
+        }
 
         // Draw possible moves
         for (let i = 0; i < possibleMoves.length; i++) {
             for (let j = 0; j < possibleMoves[i].length; j++) {
                 if (possibleMoves[i][j] === true) {
                     const squareSize = ctx.canvas.width / 8;
-                    const row = i;
+                    
                     if (playerColour == "white") {
+                        const row = i;
                         const col = 7-j;
                         ctx.fillStyle = "rgba(255,0,0,0.5)";
                         ctx.fillRect(row * squareSize, col * squareSize, squareSize, squareSize);
                     }
                     else {
+                        const row = 7-i;
                         const col = j;
                         ctx.fillStyle = "rgba(255,0,0,0.5)";
                         ctx.fillRect(row * squareSize, col * squareSize, squareSize, squareSize);
@@ -209,6 +236,7 @@ $(document).ready(function() {
                 }
             }
         }
+        
 
         // Draw all the pieces. Including the held piece (if existent).
         for (let i = 0; i < gameState.length; i++) {
@@ -226,7 +254,7 @@ $(document).ready(function() {
                     drawPiece(gameState[i].location, gameState[i].type, gameState[i].colour);
                 }
                 else {
-                    drawPiece([gameState[i].location[0],7-gameState[i].location[1]], gameState[i].type, gameState[i].colour);
+                    drawPiece([7-gameState[i].location[0],7-gameState[i].location[1]], gameState[i].type, gameState[i].colour);
                 }
                 
             }
@@ -253,7 +281,14 @@ $(document).ready(function() {
             if (gameState[i].held) {
                 continue;
             }
-            const index = gameState[i].location[0] + gameState[i].location[1] * 8;
+            let index
+            if (playerColour=="white") {
+                index = gameState[i].location[0] + gameState[i].location[1] * 8;
+            }
+            else {
+                index = (gameState[i].location[0]) + (gameState[i].location[1]) * 8;
+            }
+            
             isOccupied[index] = true;
         }
 
@@ -261,14 +296,24 @@ $(document).ready(function() {
             if (isOccupied[i] === true) {
                 continue;
             }
-
-            const column = i % 8; // the letter
-            const row = Math.floor(i / 8);
+            let column = i % 8; // the letter
+            let row = Math.floor(i / 8);
             const squareSize = ctx.canvas.width / 8;
-    
-            ctx.fillStyle = (i % 2) - (row % 2) !== 0 ? DARKSQUARECOLOUR : LIGHTSQUARECOLOUR;
             ctx.font = (ctx.canvas.width * 3 / 64) + "px Verdana";
-            ctx.fillText(`${"abcdefgh"[column]}${row+1}`, column * squareSize + 0.27 * squareSize, (8-row) * squareSize - 0.3 * squareSize);
+            if (playerColour=="white") {
+                ctx.fillStyle = (i % 2) - (row % 2) !== 0 ? DARKSQUARECOLOUR : LIGHTSQUARECOLOUR;
+                ctx.fillText(`${"abcdefgh"[column]}${row+1}`, column * squareSize + 0.27 * squareSize, (8-row) * squareSize - 0.3 * squareSize);
+            }
+            else {
+                console.log("abcdefgh"[column], row+1)
+                ctx.fillStyle = (i % 2) - (row % 2) !== 0 ? DARKSQUARECOLOUR : LIGHTSQUARECOLOUR;
+                ctx.fillText(`${"abcdefgh"[column]}${row+1}`, (7-column) * squareSize + 0.27 * squareSize, (8-(7-row)) * squareSize - 0.3 * squareSize);
+                
+            }
+            
+            
+            
+            
         }
     }
     

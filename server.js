@@ -21,7 +21,7 @@ class Piece {
                 }
                 let testCoverMasks = clearCoverMasks()
                 let checkState = copyArray(list)
-                checkState = processMove(checkState, generateClonePiece(this), [i,j])
+                checkState, dump = processMove(checkState, generateClonePiece(this), [parseInt(i),parseInt(j)])
                 for (let l in checkState) {
                     checkState[l].defineMask(checkState, testCoverMasks)
                 }
@@ -406,7 +406,6 @@ class King extends Piece {
         return this.movementMask
     }
     updateMask() {
-        console.log("ran")
         for (let i in this.movementMask) {
             for (let j in this.movementMask[i]) {
                 if (this.movementMask[i][j]) {
@@ -532,6 +531,8 @@ let gameOver = false
 var pieceList = []
 let connectionDict = {}
 let turn = "white"
+let dump
+let movedSquares = []
 let points = {
     'black':0,
     'white':0
@@ -559,6 +560,7 @@ function getDictLen(dict) {
 function processMove(list, piece, location) {
     let pieceMask = getPieceMask(list)
     let indexToTake = false
+    let moves = []
     for (let i in list) {
         if (list[i].location[0] == location[0]&&list[i].location[1] == location[1]) {
             // here list[i] refers to the piece being taken (normally)
@@ -578,14 +580,20 @@ function processMove(list, piece, location) {
                 for (let j in list) {
                     if (list[j].type=="Rook"&&!list[j].hasMoved&&list[j].colour==piece.colour) {
                         if (parseInt(piece.location[0])-2==parseInt(location[0])&&parseInt(list[j].location[0])==0) {
-                            list[j].location = [parseInt(location[0])+1,location[1]]
+                            moves.push(list[j].location)
+                            moves.push([parseInt(location[0])+1,parseInt(location[1])])
+                            list[j].location = [parseInt(location[0])+1,parseInt(location[1])]
                         }
                         else if (parseInt(piece.location[0])+2==parseInt(location[0])&&parseInt(list[j].location[0])==7) {
-                            list[j].location = [parseInt(location[0])-1,location[1]]
+                            moves.push(list[j].location)
+                            moves.push([parseInt(location[0])-1,parseInt(location[1])])
+                            list[j].location = [parseInt(location[0])-1,parseInt(location[1])]
                         }
                     }
                 }
             }
+            moves.push(list[i].location)
+            moves.push(location)
             list[i].location = location
         }
         else if (piece.type=="Pawn"&&piece.location[0]!=location[0]&&pieceMask[location[0]][location[1]]=="") {
@@ -599,7 +607,7 @@ function processMove(list, piece, location) {
     if (indexToTake) {
         list.splice(indexToTake,1)
     }
-    return list
+    return list, moves
 }
 
 
@@ -631,13 +639,13 @@ io.on('connection', function(socket) {
                 if (connectionDict[player].colour!="none") {
                     connectionDict[player].colour = oppositeColour(connectionDict[player].colour)
                 }
-                connectionDict[player].socket.emit('pieces', pieceList, connectionDict[player].colour)
+                connectionDict[player].socket.emit('pieces', pieceList, connectionDict[player].colour, movedSquares)
             }
             return
         }
         let pieceMask = getPieceMask(pieceList)
         if (location[0]>7||location[1]>7||location[0]<0||location[1]<0) {
-            socket.emit('pieces', pieceList, connectionDict[socket.id].colour)
+            socket.emit('pieces', pieceList, connectionDict[socket.id].colour, movedSquares)
             return
         }
         let tmpPieceList = copyArray(pieceList)
@@ -649,7 +657,8 @@ io.on('connection', function(socket) {
                     }
                 }
                 //process move
-                tmpPieceList = processMove(tmpPieceList, piece, location)
+                movedSquares = []
+                tmpPieceList, movedSquares = processMove(tmpPieceList, piece, location)
                 coverMasks = clearCoverMasks()
                 for (let i in tmpPieceList) {
                     tmpPieceList[i].defineMask(tmpPieceList, coverMasks)
@@ -662,7 +671,7 @@ io.on('connection', function(socket) {
                                 pieceList = copyArray(tmpPieceList)
                             }
                             else {
-                                socket.emit('pieces', pieceList, connectionDict[socket.id].colour)
+                                socket.emit('pieces', pieceList, connectionDict[socket.id].colour, movedSquares)
                                 return
                             }
                         }
@@ -684,7 +693,7 @@ io.on('connection', function(socket) {
                                 for (let k in pieceList[i].movementMask[j]) {
                                     if (pieceList[i].movementMask[j][k]) { // if the location is possible
                                         let checkState = copyArray(pieceList)
-                                        checkState = processMove(checkState, checkState[i], [j,k])
+                                        checkState, dump = processMove(checkState, checkState[i], [parseInt(j),parseInt(k)])
                                         let testCoverMasks = clearCoverMasks()
                                         for (let l in checkState) {
                                             checkState[l].defineMask(checkState, testCoverMasks)
@@ -736,7 +745,7 @@ io.on('connection', function(socket) {
                     turn = 'white'
                 }
                 for (let player in connectionDict) {
-                    connectionDict[player].socket.emit('pieces', pieceList, connectionDict[player].colour)
+                    connectionDict[player].socket.emit('pieces', pieceList, connectionDict[player].colour, movedSquares)
                     if (isCheckmate) {
                         gameOver = true
                         connectionDict[player].socket.emit('gameOver', connectionDict[socket.id].colour)
@@ -748,11 +757,11 @@ io.on('connection', function(socket) {
                 }
             }
             else {
-                socket.emit('pieces', pieceList, connectionDict[socket.id].colour)
+                socket.emit('pieces', pieceList, connectionDict[socket.id].colour, movedSquares)
             }
         }
         else {
-            socket.emit('pieces', pieceList, connectionDict[socket.id].colour)
+            socket.emit('pieces', pieceList, connectionDict[socket.id].colour, movedSquares)
         }
     })
     //Whenever someone disconnects this piece of code executed
@@ -833,33 +842,33 @@ function gameSetup() {
     // clear pieceList
     pieceList = []
     // push all the pieces to the list
-    // pieceList.push(new Rook([0,0],"white"))
-    // pieceList.push(new Knight([1,0],"white"))
-    // pieceList.push(new Bishop([2,0],"white"))
-    // pieceList.push(new Queen([3,0],"white"))
-    // pieceList.push(new King([4,0],"white"))
-    // pieceList.push(new Bishop([5,0],"white"))
-    // pieceList.push(new Knight([6,0],"white"))
-    // pieceList.push(new Rook([7,0],"white"))
-    // for (let i=0;i<8;i++) {
-    //     pieceList.push(new Pawn([i,1],"white"))
-    // }
-    // pieceList.push(new Rook([0,7],"black"))
-    // pieceList.push(new Knight([1,7],"black"))
-    // pieceList.push(new Bishop([2,7],"black"))
-    // pieceList.push(new Queen([3,7],"black"))
-    // pieceList.push(new King([4,7],"black"))
-    // pieceList.push(new Bishop([5,7],"black"))
-    // pieceList.push(new Knight([6,7],"black"))
-    // pieceList.push(new Rook([7,7],"black"))
-    // for (let i=0;i<8;i++) {
-    //     pieceList.push(new Pawn([i,6],"black"))
-    // }
-    
-    pieceList.push(new Rook([4,7],"black"))
-    pieceList.push(new King([1,7],"black"))
     pieceList.push(new Rook([0,0],"white"))
+    pieceList.push(new Knight([1,0],"white"))
+    pieceList.push(new Bishop([2,0],"white"))
+    pieceList.push(new Queen([3,0],"white"))
     pieceList.push(new King([4,0],"white"))
+    pieceList.push(new Bishop([5,0],"white"))
+    pieceList.push(new Knight([6,0],"white"))
+    pieceList.push(new Rook([7,0],"white"))
+    for (let i=0;i<8;i++) {
+        pieceList.push(new Pawn([i,1],"white"))
+    }
+    pieceList.push(new Rook([0,7],"black"))
+    pieceList.push(new Knight([1,7],"black"))
+    pieceList.push(new Bishop([2,7],"black"))
+    pieceList.push(new Queen([3,7],"black"))
+    pieceList.push(new King([4,7],"black"))
+    pieceList.push(new Bishop([5,7],"black"))
+    pieceList.push(new Knight([6,7],"black"))
+    pieceList.push(new Rook([7,7],"black"))
+    for (let i=0;i<8;i++) {
+        pieceList.push(new Pawn([i,6],"black"))
+    }
+    
+    // pieceList.push(new Rook([5,7],"black"))
+    // pieceList.push(new King([1,7],"black"))
+    // pieceList.push(new Rook([7,0],"white"))
+    // pieceList.push(new King([4,0],"white"))
     coverMasks = clearCoverMasks()
     for (let i in pieceList) {
         pieceList[i].defineMask(pieceList, coverMasks)
