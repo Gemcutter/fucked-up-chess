@@ -16,6 +16,14 @@ $(document).ready(function() {
         drawEverything();
         
     })
+    socket.on('gameOver', function(colour) {
+        if (colour != "none") {
+            alert("Game Over! "+ colour +" has won!")
+        }
+        else {
+            alert("Game Over! It's a tie!")
+        }
+    })
     let gameBoard = document.getElementById("gameBoard");
     let ctx = gameBoard.getContext("2d");
 
